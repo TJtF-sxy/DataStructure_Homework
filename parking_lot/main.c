@@ -92,6 +92,92 @@ bool DeQueue(Quene *q, Car *car) {
     return true;
 }
 
+void Kick_Car(Carpark_stack *Cpk, Car new_car, Carpark_stack *Cbf, Quene *buffer_queue, Left_info *bill, int *bill_idx)
+{
+  if(IsStackEmpty(Cpk))
+      {
+        printf("no cars to pop\n");
+      }
+      int car_idx = -1;
+      for(int i = 0; i < (*Cpk).top; i++)
+      {
+        if((*Cpk).data[i].id == new_car.id)
+        {
+          car_idx = i;
+          break;
+        }
+        //printf("car not found");
+      }
+      if(car_idx != -1)
+      {
+        for(int i = 0; i < (*Cpk).top - car_idx - 1; i++)
+        {
+          Car temp;
+          Pop(Cpk, &temp);
+          Push(Cbf, temp);
+        }
+
+        Car leave_car;
+        Pop(Cpk, &leave_car);
+
+        bill[*bill_idx].id = new_car.id;
+        bill[*bill_idx].price = (new_car.parked_time - (*Cpk).data[car_idx].parked_time) * price;
+        (*bill_idx)++;
+
+        while(!IsStackEmpty(Cbf))
+        {
+           Car temp;
+           Pop(Cbf, &temp);
+           Push(Cpk, temp);
+        }
+
+        while(!IsStackFull(Cpk) && (*buffer_queue).front != NULL)
+        {
+          Car temp;
+          DeQueue(buffer_queue, &temp);
+          Push(Cpk, temp);
+        }
+      }
+      else
+      {
+        if((*buffer_queue).front == NULL)
+        {
+          printf("no car found");
+        }
+        else
+        {
+          int quene_len = 0;
+          Path *p = (*buffer_queue).front;
+          while(p != NULL)
+          {
+            quene_len++;
+            p = p->next;
+          }
+
+          bool found = false;
+          for(int i = 0; i < quene_len; i++)
+          {
+            Car temp;
+            DeQueue(buffer_queue, &temp);
+
+            if(temp.id == new_car.id)
+            {
+              found = true;
+              break;
+            }
+            else
+            {
+              EnQueue(buffer_queue, temp);
+            }
+          }
+          if(!found)
+          {
+            printf("car not found");
+          }
+        }
+      }
+}
+
 int main()
 {
   scanf("%d%lf", &max_contain, &price);
@@ -130,94 +216,15 @@ int main()
     }
     else if(func_id == 1)
     {
-      if(IsStackEmpty(&Cpk))
-      {
-        printf("no cars to pop\n");
-      }
-      int car_idx = -1;
-      for(int i = 0; i < Cpk.top; i++)
-      {
-        if(Cpk.data[i].id == new_car.id)
-        {
-          car_idx = i;
-          break;
-        }
-        //printf("car not found");
-      }
-      if(car_idx != -1)
-      {
-        for(int i = 0; i < Cpk.top - car_idx - 1; i++)
-        {
-          Car temp;
-          Pop(&Cpk, &temp);
-          Push(&Cbf, temp);
-        }
-
-        Car leave_car;
-        Pop(&Cpk, &leave_car);
-
-        bill[bill_idx].id = new_car.id;
-        bill[bill_idx].price = (new_car.parked_time - Cpk.data[car_idx].parked_time) * price;
-        bill_idx++;
-
-        while(!IsStackEmpty(&Cbf))
-        {
-           Car temp;
-           Pop(&Cbf, &temp);
-           Push(&Cpk, temp);
-        }
-
-        while(!IsStackFull(&Cpk) && buffer_queue.front != NULL)
-        {
-          Car temp;
-          DeQueue(&buffer_queue, &temp);
-          Push(&Cpk, temp);
-        }
-      }
-      else
-      {
-        if(buffer_queue.front == NULL)
-        {
-          printf("no car found");
-        }
-        else
-        {
-          int quene_len = 0;
-          Path *p = buffer_queue.front;
-          while(p != NULL)
-          {
-            quene_len++;
-            p = p->next;
-          }
-
-          bool found = false;
-          for(int i = 0; i < quene_len; i++)
-          {
-            Car temp;
-            DeQueue(&buffer_queue, &temp);
-
-            if(temp.id == new_car.id)
-            {
-              found = true;
-              break;
-            }
-            else
-            {
-              EnQueue(&buffer_queue, temp);
-            }
-          }
-          if(!found)
-          {
-            printf("car not found");
-          }
-        }
-      }
+      Kick_Car(&Cpk, new_car, &Cbf, &buffer_queue, bill, &bill_idx);
     }
     else
     {
       printf("unknown command");
     }
   }
+
+  //输出账单和便道车辆信息
   for(int i = 0; i < bill_idx; i++)
   {
     printf("%d %.2lf\n", bill[i].id, bill[i].price);
